@@ -9,4 +9,6 @@ Research information gathered from:
 This project is intended to be used as a learning tool.
 No guarantee is being made for its suitability for any particular purpose.
 
+##Pinout for the LCD display:
+
 ![LCD Pinout](LCD_Pinout.png)
