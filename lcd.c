@@ -33,12 +33,14 @@ void SetCmdMode()
 {
     DBG_PRINT("LCD_RS=0", NULL);
     digitalWrite(LCD_RS, 0); // set for commands
+    usleep(500);
 }
 
 void SetChrMode()
 {
     DBG_PRINT("LCD_RS=1", NULL);
     digitalWrite(LCD_RS, 1); // set for characters
+    usleep(500);
 }
 
 void pulseEnable()
@@ -132,6 +134,7 @@ void lcdInit(void)
     DBG_PRINT("Initializing...", 0);
 
     wiringPiSetupGpio(); // use BCM numbering
+
     // set up pi pins for output
     pinMode(LCD_E,  OUTPUT);
     pinMode(LCD_RS, OUTPUT);
@@ -143,56 +146,11 @@ void lcdInit(void)
     // initialise LCD
     SetCmdMode();   // set for commands
 
-    // Initializations from the PDF datasheet
-    /* 8-bit mode init (DL = 1)
-        Function set:
-        0x30 + (N & 0x08) + (F & 0x04)
-        delay 40us
+    // The Function Set command needs to be sent twice
+    // (discovered by experimentation)
+    lcdByte(CMD_FUNCTION_SET + LCD_DATA_LENGTH_4 + LCD_2_LINES + LCD_FONT_5x8);
+    lcdByte(CMD_FUNCTION_SET + LCD_DATA_LENGTH_4 + LCD_2_LINES + LCD_FONT_5x8);
 
-        // Display ON/OFF control
-        0x08 + (D & 0x04) + (C & 0x02) + (B & 0x01)
-        delay 40us
-
-        // Display clear
-        0x01
-        delay 1.53ms
-
-        // Entry mode set
-        0x04 + (I/D & 0x02) + (SH & 0x01)
-    */
-    /* 4-bit mode init (DL = 0)
-        Function set: 4-bit, 2-line, 5x11 dots font
-        U : 0x2 (= 0x2 + DL)
-        L : (N & 0x8) + (F & 0x4) => 0xC
-            lcb_byte(0x2C);
-        delay 40us
-
-        Function set: 4-bit, 2-line, 5x11 dots font
-        U : 0x2 (= 0x2 + DL)
-        L : (N & 0x8) + (F & 0x4) => 0xC
-            lcb_byte(0x2C);
-        delay 40us
-
-        // Display ON/OFF control: Display ON, Cursor OFF, Blinking OFF
-        U : 0x0
-        L : 0x8 + (D & 0x4) + (C & 0x2) + (B & 0x1)
-            lcb_byte(0x0C);
-        delay 40us
-
-        // Display clear
-        U : 0x0
-        L : 0x1
-            lcb_byte(0x01);
-        delay 1.53ms
-
-        // Entry mode set
-        U : 0x0
-        L : 0x4 + (I/D & 0x2) + (SH & 0x1)
-            lcb_byte(0x06);
-        (delay 40us)
-    */
-
-    lcdByte(CMD_FUNCTION_SET + LCD_DATA_LENGTH_4 + LCD_2_LINES + LCD_FONT_5x11);
     lcdByte(CMD_DISPLAY_ON_OFF_CTL + LCD_DISPLAY_ON + LCD_CURSOR_OFF + LCD_BLINK_OFF);
     lcdByte(CMD_CURSOR_DISP_SHIFT + LCD_SHIFT_CURSOR + LCD_SHIFT_LEFT);
     lcdByte(CMD_ENTRY_MODE_SET + LCD_INCREMENT + LCD_DISPLAY_SHIFT_OFF);
