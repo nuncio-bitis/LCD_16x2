@@ -1,0 +1,204 @@
+//******************************************************************************
+//
+// FILE NAME: lcd.c
+//
+// DESCRIPTION:
+//   Interface for writing text to a 16x2 LCD display.
+//
+// AUTHOR: J. Parziale
+//
+//******************************************************************************
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <wiringPi.h>
+#include <unistd.h>
+
+#include "lcd.h"
+
+// ****************************************************************************
+
+// This can be set by making the 'debug' target (make debug)
+//#define DEBUG
+
+#ifdef DEBUG
+  #define DBG_PRINT(msg, ...) printf("%s(%d) %s | " msg "\n", __FILE__, __LINE__, __func__, __VA_ARGS__)
+#else
+  #define DBG_PRINT(msg, ...)
+#endif
+
+// ****************************************************************************
+
+void SetCmdMode()
+{
+    DBG_PRINT("LCD_RS=0", NULL);
+    digitalWrite(LCD_RS, 0); // set for commands
+}
+
+void SetChrMode()
+{
+    DBG_PRINT("LCD_RS=1", NULL);
+    digitalWrite(LCD_RS, 1); // set for characters
+}
+
+void pulseEnable()
+{
+    digitalWrite(LCD_E, HIGH);
+    usleep(50); // min 40 uS is needed for commands
+
+    digitalWrite(LCD_E, LOW);
+    usleep(50); // min 40 uS is needed for commands
+}
+
+// ****************************************************************************
+
+/*
+  send a byte to the lcd in two nibbles
+  before calling use SetChrMode or SetCmdMode to determine whether to send character or command
+*/
+void lcdByte(char bits)
+{
+    DBG_PRINT("0x%02X", bits);
+
+    digitalWrite(LCD_D4, (bits & 0x10));
+    digitalWrite(LCD_D5, (bits & 0x20));
+    digitalWrite(LCD_D6, (bits & 0x40));
+    digitalWrite(LCD_D7, (bits & 0x80));
+    pulseEnable();
+
+    digitalWrite(LCD_D4, (bits & 0x1));
+    digitalWrite(LCD_D5, (bits & 0x2));
+    digitalWrite(LCD_D6, (bits & 0x4));
+    digitalWrite(LCD_D7, (bits & 0x8));
+    pulseEnable();
+}
+
+void lcdCommand(uint8_t cmd)
+{
+    SetCmdMode();
+    lcdByte(cmd);
+
+    if ((CMD_CLR_DISP == cmd) || (CMD_RET_HOME == cmd))
+    {
+        usleep(2 * 1000); // min 1.53 ms required after a screen clear or return-to-home
+    }
+}
+
+// ****************************************************************************
+
+/*
+ * Write text to the specified display line
+ * Returns # characters written, or -1 on error.
+ */
+int lcdText(char *s, enum LcdLine line)
+{
+    // Set the AC to the specified line.
+    uint8_t cmd = CMD_SET_DDRAM_ADDR;
+    if (line == LCD_LINE1)
+    {
+        cmd += LINE1_ADDR;
+    }
+    else if (line == LCD_LINE2)
+    {
+        cmd += LINE2_ADDR;
+    }
+    else
+    {
+        return -1;
+    }
+    lcdCommand(cmd);
+
+    // @TODO If text length > 16 characters, set display shift
+
+    // Write the text
+    SetChrMode();
+    int i = 0;
+    DBG_PRINT("LCD line %d", line+1);
+    while (*s)
+    {
+        DBG_PRINT("%c", *s);
+        lcdByte(*s);
+        s++;
+        i++;
+    }
+
+    return i;
+}
+
+// ****************************************************************************
+
+void lcdInit(void)
+{
+    DBG_PRINT("Initializing...", 0);
+
+    wiringPiSetupGpio(); // use BCM numbering
+    // set up pi pins for output
+    pinMode(LCD_E,  OUTPUT);
+    pinMode(LCD_RS, OUTPUT);
+    pinMode(LCD_D4, OUTPUT);
+    pinMode(LCD_D5, OUTPUT);
+    pinMode(LCD_D6, OUTPUT);
+    pinMode(LCD_D7, OUTPUT);
+
+    // initialise LCD
+    SetCmdMode();   // set for commands
+
+    // Initializations from the PDF datasheet
+    /* 8-bit mode init (DL = 1)
+        Function set:
+        0x30 + (N & 0x08) + (F & 0x04)
+        delay 40us
+
+        // Display ON/OFF control
+        0x08 + (D & 0x04) + (C & 0x02) + (B & 0x01)
+        delay 40us
+
+        // Display clear
+        0x01
+        delay 1.53ms
+
+        // Entry mode set
+        0x04 + (I/D & 0x02) + (SH & 0x01)
+    */
+    /* 4-bit mode init (DL = 0)
+        Function set: 4-bit, 2-line, 5x11 dots font
+        U : 0x2 (= 0x2 + DL)
+        L : (N & 0x8) + (F & 0x4) => 0xC
+            lcb_byte(0x2C);
+        delay 40us
+
+        Function set: 4-bit, 2-line, 5x11 dots font
+        U : 0x2 (= 0x2 + DL)
+        L : (N & 0x8) + (F & 0x4) => 0xC
+            lcb_byte(0x2C);
+        delay 40us
+
+        // Display ON/OFF control: Display ON, Cursor OFF, Blinking OFF
+        U : 0x0
+        L : 0x8 + (D & 0x4) + (C & 0x2) + (B & 0x1)
+            lcb_byte(0x0C);
+        delay 40us
+
+        // Display clear
+        U : 0x0
+        L : 0x1
+            lcb_byte(0x01);
+        delay 1.53ms
+
+        // Entry mode set
+        U : 0x0
+        L : 0x4 + (I/D & 0x2) + (SH & 0x1)
+            lcb_byte(0x06);
+        (delay 40us)
+    */
+
+    lcdByte(CMD_FUNCTION_SET + LCD_DATA_LENGTH_4 + LCD_2_LINES + LCD_FONT_5x11);
+    lcdByte(CMD_DISPLAY_ON_OFF_CTL + LCD_DISPLAY_ON + LCD_CURSOR_OFF + LCD_BLINK_OFF);
+    lcdByte(CMD_CURSOR_DISP_SHIFT + LCD_SHIFT_CURSOR + LCD_SHIFT_LEFT);
+    lcdByte(CMD_ENTRY_MODE_SET + LCD_INCREMENT + LCD_DISPLAY_SHIFT_OFF);
+
+    lcdByte(CMD_CLR_DISP);
+    usleep(2 * 1000); // min 1.53 ms required for a screen clear
+}
+
+// ****************************************************************************
