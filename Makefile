@@ -23,11 +23,11 @@ LDLIBS    = -lwiringPi -lwiringPiDev -lpthread -lm
 
 ###############################################################################
 
-BINS = testLcd
+BINS = lcd_text
 
 SRCS = \
 	lcd.c \
-	testLcd.c
+	lcd_text.c
 
 HDRS = lcd.h
 
@@ -42,7 +42,7 @@ all: $(BINS)
 debug:
 	$(MAKE) DEBUG=-DDEBUG all
 
-testLcd: testLcd.c lcd.o
+lcd_text: lcd_text.c lcd.o
 	@echo "----------------------------------------"
 	@echo [link]
 	@echo $(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)

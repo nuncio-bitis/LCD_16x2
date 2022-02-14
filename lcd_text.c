@@ -1,10 +1,10 @@
 //******************************************************************************
 //
-// FILE NAME: testLcd.c
+// FILE NAME: lcd_text.c
 //
 // DESCRIPTION:
 //   Send text to a 16x2 LCD display.
-//   To build: gcc testLcd.c -o testLcd -lwiringPi
+//   Format: lcd_text <line 1 text> [<line 2 text>]
 //
 // AUTHOR: J. Parziale
 //
@@ -36,8 +36,9 @@ int main(int argc, char *argv[])
     }
     else
     {
-        (void)lcdText("  LCD DISPLAY", LCD_LINE1);
-        (void)lcdText(" Hello World!!!", LCD_LINE2);
+        // No parameters - display some test text.
+        (void)lcdText("[++ABCDEFGHIJ++]", LCD_LINE1);
+        (void)lcdText("[++1234567890++]", LCD_LINE2);
     }
 
     // Return cursor to home position
