@@ -23,7 +23,7 @@ LDLIBS    = -lwiringPi -lwiringPiDev -lpthread -lm
 
 ###############################################################################
 
-BINS = lcd_text
+BINS = lcd_text do_clock
 
 SRCS = \
 	lcd.c \
@@ -43,6 +43,13 @@ debug:
 	$(MAKE) DEBUG=-DDEBUG all
 
 lcd_text: lcd_text.c lcd.o
+	@echo "----------------------------------------"
+	@echo [link]
+	@echo $(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	@echo
+
+do_clock: do_clock.c lcd.o
 	@echo "----------------------------------------"
 	@echo [link]
 	@echo $(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)

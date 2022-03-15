@@ -110,7 +110,7 @@ enum LcdLine {
 void lcdInit(void);
 void lcdByte(char bits);
 void lcdCommand(uint8_t cmd);
-int  lcdText(char *s, enum LcdLine line);
+int  lcdText(const char *s, enum LcdLine line);
 
 // Internal functions.
 // Users of this API should not need to call these.
