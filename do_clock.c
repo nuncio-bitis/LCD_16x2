@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
         (void)lcdText(line1, LCD_LINE1);
         (void)lcdText(line2, LCD_LINE2);
 
+        usleep(100 * 1000);
     } // end while
 
     // Return cursor to home position
