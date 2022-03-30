@@ -18,13 +18,28 @@
 // ****************************************************************************
 // GPIO setup
 
+#define RPI4 0
+#define RPI5 1
+#define MACHINE RPI5
+
 // Define GPIO pins (NOTE: this assumes 4-bit mode is being used)
-#define LCD_E  19
-#define LCD_RS 26
-#define LCD_D4 13
-#define LCD_D5 6
-#define LCD_D6 5
-#define LCD_D7 21
+#if MACHINE == RPI5
+#define LCD_RS 18   // pin 4
+#define LCD_E  23   // pin 6
+#define LCD_D4 24   // pin 11
+#define LCD_D5 25   // pin 12
+#define LCD_D6 8    // pin 13
+#define LCD_D7 7    // pin 14
+#elif MACHINE == RPI4
+#define LCD_RS 26   // pin 4
+#define LCD_E  19   // pin 6
+#define LCD_D4 13   // pin 11
+#define LCD_D5 6    // pin 12
+#define LCD_D6 5    // pin 13
+#define LCD_D7 21   // pin 14
+#else
+#error INCORRECT MACHINE SPECIFICATION
+#endif
 
 //******************************************************************************
 // LCD hardware definitions

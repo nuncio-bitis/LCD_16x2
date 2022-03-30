@@ -148,8 +148,8 @@ void lcdInit(void)
     wiringPiSetupGpio(); // use BCM numbering
 
     // set up pi pins for output
-    digitalWrite(LCD_E,  0); pinMode(LCD_E,  OUTPUT);
     digitalWrite(LCD_RS, 0); pinMode(LCD_RS, OUTPUT);
+    digitalWrite(LCD_E,  0); pinMode(LCD_E,  OUTPUT);
     digitalWrite(LCD_D4, 0); pinMode(LCD_D4, OUTPUT);
     digitalWrite(LCD_D5, 0); pinMode(LCD_D5, OUTPUT);
     digitalWrite(LCD_D6, 0); pinMode(LCD_D6, OUTPUT);
