@@ -1,6 +1,6 @@
 //******************************************************************************
 //
-// FILE NAME: lcd.c
+// FILE NAME: lcd_16x2.c
 //
 // DESCRIPTION:
 //   Interface for writing text to a 16x2 LCD display.
@@ -14,7 +14,7 @@
 #include <wiringPi.h>
 #include <unistd.h>
 
-#include "lcd.h"
+#include "lcd_16x2.h"
 
 // ****************************************************************************
 

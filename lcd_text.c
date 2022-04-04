@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "lcd.h"
+#include "lcd_16x2.h"
 
 // ****************************************************************************
 

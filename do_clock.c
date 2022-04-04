@@ -17,7 +17,7 @@
 #include <signal.h>
 #include <stdbool.h>
 
-#include "lcd.h"
+#include "lcd_16x2.h"
 
 // ****************************************************************************
 

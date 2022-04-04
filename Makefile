@@ -23,13 +23,15 @@ LDLIBS    = -lwiringPi -lwiringPiDev -lpthread -lm
 
 ###############################################################################
 
-BINS = lcd_text do_clock
+BINS = lcd_text do_clock dispSysInfo cpuUsage memUsage
 
 SRCS = \
-	lcd.c \
-	lcd_text.c
+	lcd_16x2.c \
+	lcd_text.c \
+	dispSysInfo.c \
+	cpuUsage.c
 
-HDRS = lcd.h
+HDRS = lcd_16x2.h
 
 OBJS = $(SRCS:.c=.o)
 
@@ -42,18 +44,39 @@ all: $(BINS)
 debug:
 	$(MAKE) DEBUG=-DDEBUG all
 
-lcd_text: lcd_text.c lcd.o
+lcd_text: lcd_text.c lcd_16x2.o
 	@echo "----------------------------------------"
 	@echo [link]
 	@echo $(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 	@echo
 
-do_clock: do_clock.c lcd.o
+do_clock: do_clock.c lcd_16x2.o
 	@echo "----------------------------------------"
 	@echo [link]
 	@echo $(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	@echo
+
+dispSysInfo: dispSysInfo.c lcd_16x2.o cpuUsage.o memUsage.o
+	@echo "----------------------------------------"
+	@echo [link]
+	@echo $(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	@echo
+
+cpuUsage: cpuUsage.c
+	@echo "----------------------------------------"
+	@echo [link]
+	@echo $(CC) $(CFLAGS) -D MAIN -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	@$(CC) $(CFLAGS) -D MAIN -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	@echo
+
+memUsage: memUsage.c
+	@echo "----------------------------------------"
+	@echo [link]
+	@echo $(CC) $(CFLAGS) -D MAIN -o $@ $^ $(LDFLAGS) $(LDLIBS)
+	@$(CC) $(CFLAGS) -D MAIN -o $@ $^ $(LDFLAGS) $(LDLIBS)
 	@echo
 
 ###############################################################################

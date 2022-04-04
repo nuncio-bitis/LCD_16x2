@@ -1,6 +1,6 @@
 //******************************************************************************
 //
-// FILE NAME: lcd.h
+// FILE NAME: lcd_16x2.h
 //
 // DESCRIPTION:
 //   Interface for writing text to a 16x2 LCD display.
