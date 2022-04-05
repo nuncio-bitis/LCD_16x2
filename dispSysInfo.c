@@ -29,14 +29,12 @@
 
 // ****************************************************************************
 
-// @DEBUG
 #define HERE() do { printf ("%s(%d).%s\r\n", __FILE__, __LINE__, __FUNCTION__); } while(0)
 #define DPRINTF(fmt, args...) do { \
         printf ("%s(%d).%s ", __FILE__, __LINE__, __FUNCTION__); \
         printf(fmt, ## args); \
         fflush(stdout); \
 } while (0)
-// @DEBUG
 
 // ****************************************************************************
 // Definitions for buttons
@@ -81,6 +79,8 @@ static void doCPU(void);
 static double getCPUPercent(void);
 static double getMemPercent(void);
 
+static bool UseSavedWeather = false;
+
 // ****************************************************************************
 
 int main(int argc, char *argv[])
@@ -91,6 +91,14 @@ int main(int argc, char *argv[])
     signal(SIGINT,  &Signal_handler);
 
     signal(SIGHUP, SIG_IGN);
+
+    // ----------------------------------------------------
+
+    // Check for an option to use a pre-existing weather.xml file
+    if ((argc > 1) && (strcmp(argv[1],"-f") == 0))
+    {
+        UseSavedWeather = true;
+    }
 
     // ----------------------------------------------------
 
@@ -278,8 +286,18 @@ void doWeather(void)
             // Get output from weather python script
             FILE *fp;
 
-            // Open the command for reading.
-            fp = popen("/home/pi/bin/weather.py -d", "r");
+            if (UseSavedWeather)
+            {
+                // Specify we want to use saved data
+                fp = popen("/home/pi/bin/weather.py -d -f", "r");
+            }
+            else
+            {
+                // Specify we want refreshed data.
+                // @NOTE Data < 15 minutes will always be reused.
+                fp = popen("/home/pi/bin/weather.py -d", "r");
+            }
+
             if (fp == NULL)
             {
                 printf("Failed to run command\n" );
@@ -290,9 +308,29 @@ void doWeather(void)
 
                 // Read the output
                 fgets(info, sizeof(info), fp);
+                // Make replacements
+                info[strlen(info)-1] = 0; // Remove 0x0A
+                // Replace "'" with 0xDF (degree sign for the LCD)
+                for (int i=0; i < strlen(info); ++i)
+                {
+                    if (info[i] == '\'')
+                    {
+                        info[i] = 0xdf;
+                    }
+                }
                 strncpy(line1, info, sizeof(line1));
 
                 fgets(info, sizeof(info), fp);
+                // Make replacements
+                info[strlen(info)-1] = 0; // Remove 0x0A
+                // Replace "'" with 0xDF (degree sign for the LCD)
+                for (int i=0; i < strlen(info); ++i)
+                {
+                    if (info[i] == '\'')
+                    {
+                        info[i] = 0xdf;
+                    }
+                }
                 strncpy(line2, info, sizeof(line2));
 
                 pclose(fp);
@@ -305,8 +343,6 @@ void doWeather(void)
 
         delayMs(loopPeriod);
         loopCount += loopPeriod;
-//        delayMs(1000); // @DEBUG
-//        loopCount = updatePeriod; // @DEBUG
     } // end while(systemMode)
 }
 
@@ -330,6 +366,8 @@ void doCPU(void)
         double mem_avail = getMemPercent();
 
 #if 0
+        // Print CPU usage and Free Memory as bar graphs on 2 lines
+
         int cpu_bars = (int)(n_chars * cpu_percent / 100.0 + 0.5);
         int mem_bars = (int)(n_chars * mem_avail / 100.0 + 0.5);
 
@@ -347,6 +385,9 @@ void doCPU(void)
             line2[i+2] = '#';
         }
 #else
+        // Print CPU usage and Free Memory as percentages on one line
+        // and time on the seconds line.
+
         // Line 1: C:xx.x% M:xx.x%
         sprintf(line1, "C:%4.1f%% M:%4.1f%%", cpu_percent, mem_avail);
 
@@ -380,7 +421,6 @@ double getCPUPercent(void)
     else
     {
         CpuUsage(&usg, &st1, &st2);
-        //printf("CPU: Active %.2f%% Idle: %.2f%% ; %ld mS\n", usg.activePct, usg.idlePct, usg.deltaTime); // @DEBUG
         ret = usg.activePct;
     }
     memcpy(&st1, &st2, sizeof(st2));
@@ -393,7 +433,6 @@ double getMemPercent(void)
     struct memStats mst;
     getMemStats(&mst);
     double freePct = 100.0 * (double)mst.free / (double)mst.total;
-    //printf("Memory: Total %ld  Free %ld (%.2f%%)\n", mst.total, mst.free, freePct); // @DEBUG
     return freePct;
 }
 
