@@ -59,8 +59,8 @@ typedef enum
     // These values match button indices
     CLOCK   = 0,
     WEATHER = 1,
-    CPU     = 2,
-    OTHER   = 3, // @TODO
+    CPU1    = 2,
+    CPU2    = 3,
     INVALID = 9  // Used to exit application
 } Mode;
 static Mode systemMode = CLOCK;
@@ -75,7 +75,8 @@ static void *debounce (UNUSED void *arg);
 
 static void doClock(void);
 static void doWeather(void);
-static void doCPU(void);
+static void doCPU1(void);
+static void doCPU2(void);
 static double getCPUPercent(void);
 static double getMemPercent(void);
 
@@ -127,12 +128,12 @@ int main(int argc, char *argv[])
             doWeather();
             break;
 
-        case CPU:
-            doCPU();
+        case CPU1:
+            doCPU1();
             break;
 
-        // @TODO
-        case OTHER:
+        case CPU2:
+            doCPU2();
             break;
 
         default:
@@ -348,25 +349,25 @@ void doWeather(void)
 
 // ****************************************************************************
 
-void doCPU(void)
+void doCPU1(void)
 {
-    // |++++++++++++++++|
-    // |C:###___________| CPU usage %
-    // |M:######________| Mem avail %
-    // |++++++++++++++++|
-    // There are 14 characters being dedicated to show the percentage.
-    // Percentage per bar = 100% / 14
-    // n_bars = (int)(percentage / (100/14))
-    //        = (int)(14 * percentage / 100)
-    const int n_chars = 14;
-
-    while (systemMode == CPU)
+    while (systemMode == CPU1)
     {
         double cpu_percent = getCPUPercent();
         double mem_avail = getMemPercent();
 
 #if 0
         // Print CPU usage and Free Memory as bar graphs on 2 lines
+
+        // |++++++++++++++++|
+        // |C:###___________| CPU usage %
+        // |M:######________| Mem avail %
+        // |++++++++++++++++|
+        // There are 14 characters being dedicated to show the percentage.
+        // Percentage per bar = 100% / 14
+        // n_bars = (int)(percentage / (100/14))
+        //        = (int)(14 * percentage / 100)
+        const int n_chars = 14;
 
         int cpu_bars = (int)(n_chars * cpu_percent / 100.0 + 0.5);
         int mem_bars = (int)(n_chars * mem_avail / 100.0 + 0.5);
@@ -386,7 +387,7 @@ void doCPU(void)
         }
 #else
         // Print CPU usage and Free Memory as percentages on one line
-        // and time on the seconds line.
+        // and time on the second line.
 
         // Line 1: C:xx.x% M:xx.x%
         sprintf(line1, "C:%4.1f%% M:%4.1f%%", cpu_percent, mem_avail);
@@ -428,12 +429,64 @@ double getCPUPercent(void)
     return ret;
 }
 
+// /opt/vc/bin/vcgencmd measure_temp
+double getCPUTemperature()
+{
+    double systemp = -1.0;
+
+#if defined(_POSIX_C_SOURCE) && !defined(_DARWIN_C_SOURCE)
+    double millideg = 0.0;
+    FILE *thermal;
+
+    thermal = fopen("/sys/class/thermal/thermal_zone0/temp","r");
+    if (thermal != NULL)
+    {
+        if (fscanf(thermal,"%lf",&millideg) < 1) {
+            millideg = -273000.0;
+        }
+        fclose(thermal);
+        systemp = millideg / 1000;
+    }
+#else
+    // @TODO
+#endif
+
+    return systemp;
+}
+
 double getMemPercent(void)
 {
     struct memStats mst;
     getMemStats(&mst);
     double freePct = 100.0 * (double)mst.free / (double)mst.total;
     return freePct;
+}
+
+// ****************************************************************************
+
+void doCPU2(void)
+{
+    while (systemMode == CPU2)
+    {
+        double cpu_temp = getCPUTemperature();
+        double mem_avail = getMemPercent();
+
+        // Print CPU temperature and Free Memory on one line
+        // and time on the second line.
+
+        // Line 1: C:xx.x°C M:xx.x%
+        sprintf(line1, "C:%4.1f%cC M:%4.1f%%", cpu_temp, 0xdf, mem_avail);
+
+        // Line 2: hh:mm:ss AM/PM EDT/EST
+        time_t now = time(NULL);
+        struct tm * local_time = localtime(&now);
+        strftime(line2, sizeof(line2), "%r %Z", local_time);
+
+        (void)lcdText(line1, LCD_LINE1);
+        (void)lcdText(line2, LCD_LINE2);
+
+        delayMs(1000);
+    } // end while(systemMode)
 }
 
 // ****************************************************************************
