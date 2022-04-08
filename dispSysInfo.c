@@ -27,6 +27,10 @@
 #include "cpuUsage.h"
 #include "memUsage.h"
 
+#if MACHINE == RPI4
+#error This program isn't set up to be used on RaspberryPi4
+#endif
+
 // ****************************************************************************
 
 #define HERE() do { printf ("%s(%d).%s\r\n", __FILE__, __LINE__, __FUNCTION__); } while(0)
