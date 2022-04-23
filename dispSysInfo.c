@@ -28,7 +28,7 @@
 #include "memUsage.h"
 
 #if MACHINE == RPI4
-#error This program isn't set up to be used on RaspberryPi4
+#error This program is not set up to be used on RaspberryPi4
 #endif
 
 // ****************************************************************************
